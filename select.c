@@ -18,7 +18,7 @@ void die (char *s)
 perror(s);
 exit(1);
 }
-char handler[BUFLEN] (char[] cr)
+char handler[BUFLEN] (char *cr)
 {
     char ret[BUFLEN];
     memset (ret,'\0',BUFLEN);
@@ -63,6 +63,7 @@ int main()
         }
         if (FD_ISSET(tsock, &rfds)) 
         {
+            socklen_t len;
             len=sizeof(si);
             ssock = accept(tsock, (struct sockaddr *)&si,&len);
             if(ssock <0)
@@ -72,8 +73,8 @@ int main()
             }
             else
             {
-                buf = handler(buf);
-                if(send(ssock,buf, sizeof(buf))<0) 
+                buf = &handler(buf);
+                if(send(ssock,buf, sizeof(buf),0)<0) 
                 {
                     /* ошибка */
                     printf("error in send");
@@ -83,8 +84,8 @@ int main()
         }
         if (FD_ISSET(usock, &rfds)) 
         {
-            len = sizeof(si);
-            if (recvfrom(usock, buf, sizeof(buf), 0, (struct sockaddr *)&si, &len) <0) 
+           
+            if (recvfrom(usock, buf, sizeof(buf), 0, (struct sockaddr *)&si, sizeof(si)) <0) 
             {
             
                 /*ошибка*/
@@ -92,7 +93,7 @@ int main()
             }
             else
             {
-                buf = handler(buf);
+                buf = &handler(buf);
                 if(sendto(usock, buf, strlen(buf), 0, (struct sockaddr *)&si, sizeof(si))<0)
                 {
                     /*ошибка*/
