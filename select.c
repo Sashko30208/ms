@@ -18,12 +18,14 @@ void die (char *s)
 perror(s);
 exit(1);
 }
-char handler[BUFLEN] (char *cr)
+char[BUFLEN] globalReply;
+memset(globalReply, '\0',BUFLEN);
+int *pointer;
+pointer = $globalReply;
+
+void handler (char *cr)
 {
-    char ret[BUFLEN];
-    memset (ret,'\0',BUFLEN);
-    sprintf(*(&ret),"%s%s\n",cr," Is reply");
-    return ret;
+    sprintf(*pointer,"%s%s\n",cr," Is reply");
 }
 
 int main()
@@ -73,19 +75,21 @@ int main()
             }
             else
             {
-                buf = &handler(buf);
-                if(send(ssock,buf, sizeof(buf),0)<0) 
+                handler(buf);
+                if(send(ssock,globalReply, strlen(globalReply),0)<0) 
                 {
                     /* ошибка */
                     printf("error in send");
                 }
                 close(ssock);
+                memset(*pointer, '\0',BUFLEN);
             }
         }
         if (FD_ISSET(usock, &rfds)) 
         {
-           
-            if (recvfrom(usock, buf, sizeof(buf), 0, (struct sockaddr *)&si, sizeof(si)) <0) 
+            socklen_t len;
+            len=sizeof(si);
+            if (recvfrom(usock, buf, sizeof(buf), 0, (struct sockaddr *)&si, &len) <0) 
             {
             
                 /*ошибка*/
@@ -93,13 +97,14 @@ int main()
             }
             else
             {
-                buf = &handler(buf);
-                if(sendto(usock, buf, strlen(buf), 0, (struct sockaddr *)&si, sizeof(si))<0)
+                handler(buf);
+                if(sendto(usock, globalReply, strlen(globalReply), 0, (struct sockaddr *)&si, sizeof(si))<0)
                 {
                     /*ошибка*/
                     printf("error in send");
                 }
                 close(usock);
+                memset(*pointer, '\0',BUFLEN);
             }
         }
     } 
