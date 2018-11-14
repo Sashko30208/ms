@@ -8,6 +8,8 @@
 #include <ctype.h>
 #include <unistd.h>//close()
 #include <netinet/in.h>
+#include <sys/select.h> //fd_set/zero etc..
+
 
 #define BUFLEN 512 //max Buffer length
 #define PORT 8888
@@ -18,17 +20,29 @@ void die (char *s)
 perror(s);
 exit(1);
 }
-char handler[BUFLEN] (char[] cr)
+
+
+char *globalReply (char *cr)
 {
-    char ret[BUFLEN];
-    memset (ret,'\0',BUFLEN);
-    sprintf(*(&ret),"%s%s\n",cr," Is reply");
-    return ret;
+    char *pointer;
+    if((pointer =malloc(strlen(cr)+strlen(REPLY)))==NULL)
+    {
+        
+        perror ("malloc");
+        exit (1);
+        return NULL;
+    }    
+    sprintf(*(&pointer),"%s%s\n",cr,REPLY);
+    //printf ("\nptr:%s\n",*(&pointer));
+    return *(&pointer);
 }
+
+
 
 int main()
 {
     char buf[BUFLEN];
+    struct timeval tv;
     int tsock; /* Ведущий сокет TCP */
     int usock; /* Сокет UDP */
     int ssock; /* Ведомый сокет TCP */
@@ -36,7 +50,19 @@ int main()
     /* инициализация сокетов tsock и usock */
     //nfds = MAX(tsock, usock) +1; /* Длина битовой маски для набора дескрипторов */
     int nfds= 3;
-    
+    //create a UDP socket
+    if ((usock=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
+    {
+        die("socket(udp)");
+    }
+    /*create a TCP socket
+    (AF_INET(internet-домен),SOCK_STREAM(для TCP),протокол по умолчанию)*/
+	if ((tsock = socket(AF_INET, SOCK_STREAM, 0))==-1) //создание сокета
+	{
+        die("socket(tcp)");
+    }
+    tv.tv_sec = 5;
+    tv.tv_usec = 0;
 
         struct sockaddr_in si;
         bzero(&si, sizeof(si));
@@ -54,53 +80,61 @@ int main()
         FD_SET(tsock, &rfds); 
         FD_SET(usock, &rfds);
        
-
-        if (select(nfds, &rfds, (fd_set *)0, (fd_set *)0, (struct timeval *)0) <0) 
+        printf("i'm waiting 4 u..\n");
+        if (select(nfds, &rfds, (fd_set *)0, (fd_set *)0, &tv) <0) 
         {
             /* ошибка */
-            printf("an error in select statement");
+            printf("an error in select statement\n");
             continue;
         }
         if (FD_ISSET(tsock, &rfds)) 
         {
+            socklen_t len;
             len=sizeof(si);
             ssock = accept(tsock, (struct sockaddr *)&si,&len);
             if(ssock <0)
             {
                 /* ошибка */
+                printf("error in send\n");
                 close(ssock);
             }
             else
             {
-                buf = handler(buf);
-                if(send(ssock,buf, sizeof(buf))<0) 
+                //globalReply(buf);
+                if(send(ssock,globalReply(buf), strlen(globalReply(buf)),0)<0) 
                 {
                     /* ошибка */
-                    printf("error in send");
+                    printf("error in send\n");
                 }
                 close(ssock);
+                memset(buf, 0,BUFLEN);
             }
         }
         if (FD_ISSET(usock, &rfds)) 
         {
-            len = sizeof(si);
+            socklen_t len;
+            len=sizeof(si);
             if (recvfrom(usock, buf, sizeof(buf), 0, (struct sockaddr *)&si, &len) <0) 
             {
             
                 /*ошибка*/
-                close(usock);
+                printf("error in recvfrom\n");
+                //close(usock);
             }
             else
             {
-                buf = handler(buf);
-                if(sendto(usock, buf, strlen(buf), 0, (struct sockaddr *)&si, sizeof(si))<0)
+                //globalReply(buf);
+                if(sendto(usock, globalReply(buf), strlen(globalReply(buf)), 0, (struct sockaddr *)&si, sizeof(si))<0)
                 {
                     /*ошибка*/
-                    printf("error in send");
+                    printf("error in sendto\n");
                 }
-                close(usock);
+                //close(usock);
+                memset(buf,0,BUFLEN);
             }
         }
     } 
+    close(usock);
+    close(tsock);
     return 0;
 }
