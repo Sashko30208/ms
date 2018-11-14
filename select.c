@@ -76,8 +76,8 @@ int main()
         FD_SET(tsock, &rfds); 
         FD_SET(usock, &rfds);
        
-
-        if (select(nfds, &rfds, (fd_set *)0, (fd_set *)0, (struct timeval *)0) <0) 
+        printf("i'm waiting 4 u..");
+        if (select(nfds, &rfds, (fd_set *)0, (fd_set *)0, (struct timeval *)5) <0) 
         {
             /* ошибка */
             printf("an error in select statement");
