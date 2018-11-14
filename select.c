@@ -95,14 +95,14 @@ int main()
             }
             else
             {
-                globalReply(buf);
-                if(send(ssock,globalReply, strlen(globalReply),0)<0) 
+                //globalReply(buf);
+                if(send(ssock,globalReply(buf), strlen(globalReply(buf)),0)<0) 
                 {
                     /* ошибка */
                     printf("error in send");
                 }
                 close(ssock);
-                memset(*pointer, '\0',BUFLEN);
+                //memset(*pointer, 0,BUFLEN);
             }
         }
         if (FD_ISSET(usock, &rfds)) 
@@ -117,14 +117,14 @@ int main()
             }
             else
             {
-                handler(buf);
-                if(sendto(usock, globalReply, strlen(globalReply), 0, (struct sockaddr *)&si, sizeof(si))<0)
+                //globalReply(buf);
+                if(sendto(usock, globalReply(buf), strlen(globalReply(buf)), 0, (struct sockaddr *)&si, sizeof(si))<0)
                 {
                     /*ошибка*/
                     printf("error in send");
                 }
                 close(usock);
-                memset(*pointer, '\0',BUFLEN);
+                //memset(*pointer,0,BUFLEN);
             }
         }
     } 
