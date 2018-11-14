@@ -10,6 +10,7 @@
 #include <netinet/in.h>
 #include <sys/select.h> //fd_set/zero etc..
 
+
 #define BUFLEN 512 //max Buffer length
 #define PORT 8888
 #define REPLY " Is_Reply\n"
@@ -41,6 +42,7 @@ char *globalReply (char *cr)
 int main()
 {
     char buf[BUFLEN];
+    struct timeval tv;
     int tsock; /* Ведущий сокет TCP */
     int usock; /* Сокет UDP */
     int ssock; /* Ведомый сокет TCP */
@@ -59,6 +61,8 @@ int main()
 	{
         die("socket(tcp)");
     }
+    tv.tv_sec = 5;
+    tv.tv_usec = 0;
 
         struct sockaddr_in si;
         bzero(&si, sizeof(si));
@@ -76,11 +80,11 @@ int main()
         FD_SET(tsock, &rfds); 
         FD_SET(usock, &rfds);
        
-        printf("i'm waiting 4 u..");
-        if (select(nfds, &rfds, (fd_set *)0, (fd_set *)0, (struct timeval *)5) <0) 
+        printf("i'm waiting 4 u..\n");
+        if (select(nfds, &rfds, (fd_set *)0, (fd_set *)0, &tv) <0) 
         {
             /* ошибка */
-            printf("an error in select statement");
+            printf("an error in select statement\n");
             continue;
         }
         if (FD_ISSET(tsock, &rfds)) 
@@ -91,6 +95,7 @@ int main()
             if(ssock <0)
             {
                 /* ошибка */
+                printf("error in send\n");
                 close(ssock);
             }
             else
@@ -99,10 +104,10 @@ int main()
                 if(send(ssock,globalReply(buf), strlen(globalReply(buf)),0)<0) 
                 {
                     /* ошибка */
-                    printf("error in send");
+                    printf("error in send\n");
                 }
                 close(ssock);
-                //memset(*pointer, 0,BUFLEN);
+                memset(buf, 0,BUFLEN);
             }
         }
         if (FD_ISSET(usock, &rfds)) 
@@ -113,7 +118,8 @@ int main()
             {
             
                 /*ошибка*/
-                close(usock);
+                printf("error in recvfrom\n");
+                //close(usock);
             }
             else
             {
@@ -121,12 +127,14 @@ int main()
                 if(sendto(usock, globalReply(buf), strlen(globalReply(buf)), 0, (struct sockaddr *)&si, sizeof(si))<0)
                 {
                     /*ошибка*/
-                    printf("error in send");
+                    printf("error in sendto\n");
                 }
-                close(usock);
-                //memset(*pointer,0,BUFLEN);
+                //close(usock);
+                memset(buf,0,BUFLEN);
             }
         }
     } 
+    close(usock);
+    close(tsock);
     return 0;
 }
