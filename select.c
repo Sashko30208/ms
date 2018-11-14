@@ -8,6 +8,7 @@
 #include <ctype.h>
 #include <unistd.h>//close()
 #include <netinet/in.h>
+#include <sys/select.h> //fd_set/zero etc..
 
 #define BUFLEN 512 //max Buffer length
 #define PORT 8888
@@ -18,15 +19,24 @@ void die (char *s)
 perror(s);
 exit(1);
 }
-char[BUFLEN] globalReply;
-memset(globalReply, '\0',BUFLEN);
-int *pointer;
-pointer = $globalReply;
 
-void handler (char *cr)
+
+char *globalReply (char *cr)
 {
-    sprintf(*pointer,"%s%s\n",cr," Is reply");
+    char *pointer;
+    if((pointer =malloc(strlen(cr)+strlen(REPLY)))==NULL)
+    {
+        
+        perror ("malloc");
+        exit (1);
+        return NULL;
+    }    
+    sprintf(*(&pointer),"%s%s\n",cr,REPLY);
+    //printf ("\nptr:%s\n",*(&pointer));
+    return *(&pointer);
 }
+
+
 
 int main()
 {
@@ -38,7 +48,17 @@ int main()
     /* инициализация сокетов tsock и usock */
     //nfds = MAX(tsock, usock) +1; /* Длина битовой маски для набора дескрипторов */
     int nfds= 3;
-    
+    //create a UDP socket
+    if ((usock=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
+    {
+        die("socket(udp)");
+    }
+    /*create a TCP socket
+    (AF_INET(internet-домен),SOCK_STREAM(для TCP),протокол по умолчанию)*/
+	if ((tsock = socket(AF_INET, SOCK_STREAM, 0))==-1) //создание сокета
+	{
+        die("socket(tcp)");
+    }
 
         struct sockaddr_in si;
         bzero(&si, sizeof(si));
@@ -75,7 +95,7 @@ int main()
             }
             else
             {
-                handler(buf);
+                globalReply(buf);
                 if(send(ssock,globalReply, strlen(globalReply),0)<0) 
                 {
                     /* ошибка */
